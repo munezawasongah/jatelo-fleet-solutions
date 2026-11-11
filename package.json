@@ -16,7 +16,10 @@
     "format:check": "prettier --check .",
     "infra:up": "docker compose -f infra/docker-compose.yml up -d --wait",
     "infra:reset": "docker compose -f infra/docker-compose.yml down -v",
-    "infra:down": "docker compose -f infra/docker-compose.yml down"
+    "infra:down": "docker compose -f infra/docker-compose.yml down",
+    "db:new": "pnpm --filter @jfs/db migrate:new",
+    "db:migrate": "pnpm --filter @jfs/db migrate",
+    "db:status": "pnpm --filter @jfs/db migrate:status"
   },
   "devDependencies": {
     "@types/node": "^26.6.6",
