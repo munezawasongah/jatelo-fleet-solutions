@@ -39,6 +39,24 @@ function fromPostgres(err: PgLikeError): AppError | null {
   }
 }
 
+const UNAVAILABLE_CODES = new Set([
+  'ECONNREFUSED',
+  'ECONNRESET',
+  'ETIMEDOUT',
+  'EAI_AGAIN',
+  'ENOTFOUND',
+  'EHOSTUNREACH',
+]);
+function isUnavailable(err: unknown): boolean {
+  const e = err as { code?: string; name?: string; cause?: { code?: string } } | null;
+  return (
+    !!e &&
+    (UNAVAILABLE_CODES.has(e.code ?? '') ||
+      UNAVAILABLE_CODES.has(e.cause?.code ?? '') ||
+      e.name === 'TimeoutError')
+  );
+}
+
 export const notFoundHandler: RequestHandler = (req, _res, next) => {
   next(new AppError(404, 'route_not_found', `No route for ${req.method} ${req.path}`));
 };

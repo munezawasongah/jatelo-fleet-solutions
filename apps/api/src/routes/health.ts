@@ -37,7 +37,10 @@ async function check(fn: () => Promise<unknown>): Promise<z.infer<typeof Check>>
     return {
       ok: false,
       latency_ms: Math.round(performance.now() - t),
-      error: err instanceof Error ? err.message : String(err),
+      error:
+        err instanceof Error
+          ? err.message || (err as { code?: string }).code || err.name
+          : String(err),
     };
   }
 }
