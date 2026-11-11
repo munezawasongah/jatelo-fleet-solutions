@@ -1,5 +1,8 @@
 import pg from 'pg';
 
+// DATE columns stay as 'YYYY-MM-DD' strings instead of JS Dates at local midnight.
+pg.types.setTypeParser(1082, (v: string) => v);
+
 export { requireEnv } from './env.js';
 export * from './migrator.js';
 
