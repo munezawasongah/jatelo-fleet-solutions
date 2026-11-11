@@ -4,7 +4,7 @@
   "description": "Jatelo Fleet Solutions - multi-tenant fleet management SaaS for East Africa",
   "packageManager": "pnpm@12.18.0",
   "engines": {
-    "node": ">=22"
+    "node": "\u003e=22"
   },
   "scripts": {
     "dev": "turbo run dev",
@@ -13,7 +13,10 @@
     "test": "turbo run test",
     "typecheck": "turbo run typecheck",
     "format": "prettier --write .",
-    "format:check": "prettier --check ."
+    "format:check": "prettier --check .",
+    "infra:up": "docker compose -f infra/docker-compose.yml up -d --wait",
+    "infra:reset": "docker compose -f infra/docker-compose.yml down -v",
+    "infra:down": "docker compose -f infra/docker-compose.yml down"
   },
   "devDependencies": {
     "@types/node": "^26.6.6",

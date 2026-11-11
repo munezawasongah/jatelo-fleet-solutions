@@ -1,0 +1,50 @@
+name: jatelo-fleet
+
+services:
+  postgres:
+    image: postgis/postgis:16-3.5
+    container_name: jfs-postgres
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: jfs
+      POSTGRES_PASSWORD: jfs_local_dev
+      POSTGRES_DB: jatelo_fleet
+    ports:
+      - "5433:5432"
+    command:
+      - postgres
+      - -c
+      - shared_buffers=256MB
+      - -c
+      - work_mem=8MB
+      - -c
+      - max_connections=100
+      - -c
+      - timezone=UTC
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+      - ./postgres/init:/docker-entrypoint-initdb.d:ro
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U jfs -d jatelo_fleet"]
+      interval: 5s
+      timeout: 5s
+      retries: 20
+
+  redis:
+    image: redis:7-alpine
+    container_name: jfs-redis
+    restart: unless-stopped
+    command: ["redis-server", "--appendonly", "yes", "--maxmemory", "256mb", "--maxmemory-policy", "noeviction"]
+    ports:
+      - "6379:6379"
+    volumes:
+      - redisdata:/data
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      timeout: 3s
+      retries: 20
+
+volumes:
+  pgdata:
+  redisdata:
