@@ -106,3 +106,19 @@ export async function assertFile(
     });
   }
 }
+
+export type ExpiryStatus = 'valid' | 'expiring_soon' | 'expired' | 'no_expiry';
+/** Status of a dated document/licence relative to today: expiring_soon = within 30 days. */
+export function expiryInfo(expires: string | null): {
+  expiry_status: ExpiryStatus;
+  days_to_expiry: number | null;
+} {
+  if (!expires) return { expiry_status: 'no_expiry', days_to_expiry: null };
+  const days = Math.round(
+    (Date.parse(expires) - Date.parse(new Date().toISOString().slice(0, 10))) / 86_400_000,
+  );
+  return {
+    expiry_status: days < 0 ? 'expired' : days <= 30 ? 'expiring_soon' : 'valid',
+    days_to_expiry: days,
+  };
+}

@@ -7,6 +7,7 @@ import { registerFileRoutes } from './files.js';
 import { registerVehicleGroupRoutes } from './vehicle-groups.js';
 import { registerVehicleRoutes } from './vehicles.js';
 import { registerDeviceRoutes } from './devices.js';
+import { registerDriverRoutes } from './drivers.js';
 
 const ApiInfo = z.object({ name: z.string(), version: z.string(), docs: z.string() });
 
@@ -25,4 +26,5 @@ export function registerV1Routes(v1: Router): void {
   registerVehicleGroupRoutes(v1);
   registerVehicleRoutes(v1);
   registerDeviceRoutes(v1);
+  registerDriverRoutes(v1);
 }
