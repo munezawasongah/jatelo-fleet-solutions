@@ -222,7 +222,10 @@ export async function ensureLoginRoles(
         throw new Error(
           `${spec.kind} database user must differ from the migration owner "${owner}"`,
         );
-      if (user === 'jfs_app' || user === 'jfs_system') throw new Error(`{spec.kind} database user cannot be the group role "{user}"; use a separate login name`);
+      if (user === 'jfs_app' || user === 'jfs_system')
+        throw new Error(
+          `{spec.kind} database user cannot be the group role "{user}"; use a separate login name`,
+        );
       const ident = client.escapeIdentifier(user);
       const bypass = spec.kind === 'system' ? 'BYPASSRLS' : 'NOBYPASSRLS';
       const group = spec.kind === 'system' ? 'jfs_system' : 'jfs_app';

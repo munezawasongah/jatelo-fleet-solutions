@@ -19,7 +19,9 @@
     "infra:down": "docker compose -f infra/docker-compose.yml down",
     "db:new": "pnpm --filter @jfs/db migrate:new",
     "db:migrate": "pnpm --filter @jfs/db migrate",
-    "db:status": "pnpm --filter @jfs/db migrate:status"
+    "db:status": "pnpm --filter @jfs/db migrate:status",
+    "db:seed": "pnpm --filter @jfs/db seed",
+    "db:seed:base": "pnpm --filter @jfs/db seed:base"
   },
   "devDependencies": {
     "@types/node": "^26.6.6",
