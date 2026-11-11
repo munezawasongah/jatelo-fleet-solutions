@@ -10,7 +10,7 @@ services:
       POSTGRES_PASSWORD: jfs_local_dev
       POSTGRES_DB: jatelo_fleet
     ports:
-      - "5433:5432"
+      - '5433:5432'
     command:
       - postgres
       - -c
@@ -25,7 +25,7 @@ services:
       - pgdata:/var/lib/postgresql/data
       - ./postgres/init:/docker-entrypoint-initdb.d:ro
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U jfs -d jatelo_fleet"]
+      test: ['CMD-SHELL', 'pg_isready -U jfs -d jatelo_fleet']
       interval: 5s
       timeout: 5s
       retries: 20
@@ -34,17 +34,46 @@ services:
     image: redis:7-alpine
     container_name: jfs-redis
     restart: unless-stopped
-    command: ["redis-server", "--appendonly", "yes", "--maxmemory", "256mb", "--maxmemory-policy", "noeviction"]
+    command:
+      [
+        'redis-server',
+        '--appendonly',
+        'yes',
+        '--maxmemory',
+        '256mb',
+        '--maxmemory-policy',
+        'noeviction',
+      ]
     ports:
-      - "6379:6379"
+      - '6379:6379'
     volumes:
       - redisdata:/data
     healthcheck:
-      test: ["CMD", "redis-cli", "ping"]
+      test: ['CMD', 'redis-cli', 'ping']
       interval: 5s
       timeout: 3s
+      retries: 20
+
+  minio:
+    image: minio/minio:RELEASE.2025-04-22T22-12-26Z
+    container_name: jfs-minio
+    restart: unless-stopped
+    command: ['server', '/data', '--console-address', ':9001']
+    environment:
+      MINIO_ROOT_USER: jfs_minio
+      MINIO_ROOT_PASSWORD: jfs_minio_local_dev
+    ports:
+      - '9000:9000'
+      - '9001:9001'
+    volumes:
+      - miniodata:/data
+    healthcheck:
+      test: ['CMD', 'mc', 'ready', 'local']
+      interval: 5s
+      timeout: 5s
       retries: 20
 
 volumes:
   pgdata:
   redisdata:
+  miniodata:

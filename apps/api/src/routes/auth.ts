@@ -205,9 +205,7 @@ async function startSession(
   return pair;
 }
 
-async function loadMfa(
-  userId: string,
-): Promise<{
+async function loadMfa(userId: string): Promise<{
   secret: string | null;
   enabled: boolean;
   lastStep: number | null;

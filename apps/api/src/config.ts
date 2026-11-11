@@ -2,6 +2,11 @@ import '@jfs/db'; // loads the monorepo root .env before validation
 import { z } from 'zod';
 
 const pgUrl = z.string().regex(/^postgres(ql)?:\/\//, 'must be a postgres:// connection URL');
+const bool = (def: 'true' | 'false') =>
+  z
+    .enum(['true', 'false'])
+    .default(def)
+    .transform((v) => v === 'true');
 
 const schema = z.object({
   NODE_ENV: z.enum(['development', 'test', 'production']).default('development'),
@@ -37,6 +42,18 @@ const schema = z.object({
     .optional()
     .transform((v) => (v ? v : undefined)),
   MAIL_FROM: z.string().default('Jatelo Fleet Solutions <no-reply@jatelo-techs.com>'),
+  S3_ENDPOINT: z.string().url(),
+  S3_PUBLIC_ENDPOINT: z
+    .string()
+    .url()
+    .optional()
+    .transform((v) => (v ? v : undefined)),
+  S3_REGION: z.string().min(1).default('us-east-1'),
+  S3_BUCKET: z.string().regex(/^[a-z0-9][a-z0-9.-]{1,61}[a-z0-9]$/, 'must be a valid bucket name'),
+  S3_ACCESS_KEY_ID: z.string().min(3),
+  S3_SECRET_ACCESS_KEY: z.string().min(8),
+  S3_FORCE_PATH_STYLE: bool('true'),
+  S3_AUTO_CREATE_BUCKET: bool('false'),
 });
 
 const parsed = schema.safeParse(process.env);
@@ -47,6 +64,9 @@ if (!parsed.success) {
   process.exit(1);
 }
 
-export const config = parsed.data;
+export const config = {
+  ...parsed.data,
+  S3_PUBLIC_ENDPOINT: parsed.data.S3_PUBLIC_ENDPOINT ?? parsed.data.S3_ENDPOINT,
+};
 export type Config = typeof config;
 export const isProduction = config.NODE_ENV === 'production';

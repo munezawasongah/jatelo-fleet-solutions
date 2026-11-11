@@ -3,7 +3,12 @@ import { createApp } from './app.js';
 import { config } from './config.js';
 import { closeDb } from './infra/db.js';
 import { closeRedis } from './infra/redis.js';
+import { ensureBucket } from './infra/storage.js';
 import { logger } from './logger.js';
+
+if (config.S3_AUTO_CREATE_BUCKET) {
+  ensureBucket().catch((err: unknown) => logger.error({ err }, 'could not ensure storage bucket'));
+}
 
 const server = createServer(createApp());
 // Longer than the Railway/edge proxy idle timeout so the proxy closes first.

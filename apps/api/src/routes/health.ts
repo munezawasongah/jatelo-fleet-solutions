@@ -3,6 +3,7 @@ import { z } from 'zod';
 import { route } from '../http/route.js';
 import { appPool, systemPool } from '../infra/db.js';
 import { redis } from '../infra/redis.js';
+import { checkStorage } from '../infra/storage.js';
 import { startedAt, version } from '../version.js';
 
 const Liveness = z.object({
@@ -67,12 +68,13 @@ export function registerHealthRoutes(router: Router): void {
       503: { description: 'At least one dependency is unreachable', schema: Readiness },
     },
     handler: async ({ res }) => {
-      const [dbApp, dbSystem, cache] = await Promise.all([
+      const [dbApp, dbSystem, cache, storage] = await Promise.all([
         check(() => appPool.query('SELECT 1')),
         check(() => systemPool.query('SELECT 1')),
         check(() => redis.ping()),
+        check(() => checkStorage()),
       ]);
-      const checks = { database_app: dbApp, database_system: dbSystem, redis: cache };
+      const checks = { database_app: dbApp, database_system: dbSystem, redis: cache, storage };
       const ok = Object.values(checks).every((c) => c.ok);
       res.status(ok ? 200 : 503).json({ status: ok ? 'ready' : 'not_ready', checks });
     },
