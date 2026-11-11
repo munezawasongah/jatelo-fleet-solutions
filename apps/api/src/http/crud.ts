@@ -68,7 +68,14 @@ export function diff(
 ): Record<string, { from: unknown; to: unknown }> {
   const out: Record<string, { from: unknown; to: unknown }> = {};
   for (const k of defined(patch)) {
-    const a = before[k] instanceof Date ? (before[k] as Date).toISOString() : before[k];
+    const raw = before[k] instanceof Date ? (before[k] as Date).toISOString() : before[k];
+    const a =
+      typeof patch[k] === 'number' &&
+      typeof raw === 'string' &&
+      raw.trim() !== '' &&
+      !Number.isNaN(Number(raw))
+        ? Number(raw)
+        : raw;
     const b = patch[k];
     if (JSON.stringify(a) !== JSON.stringify(b) && String(a ?? '') !== String(b ?? ''))
       out[k] = { from: a ?? null, to: b ?? null };

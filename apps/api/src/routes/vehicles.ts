@@ -316,7 +316,11 @@ const SORTS: Record<string, string> = {
 };
 
 /** Loads a visible (not deleted, within the user's group scope) vehicle or throws 404. */
-async function visibleVehicle(c: PoolClient, id: string, scope: string[] | null): Promise<Row> {
+export async function visibleVehicle(
+  c: PoolClient,
+  id: string,
+  scope: string[] | null,
+): Promise<Row> {
   const r = (
     await c.query<Row>('SELECT * FROM vehicles WHERE id = $1 AND deleted_at IS NULL', [id])
   ).rows[0];
