@@ -2,6 +2,7 @@ import type { Router } from 'express';
 import { z } from 'zod';
 import { route } from '../http/route.js';
 import { version } from '../version.js';
+import { registerAuthRoutes } from './auth.js';
 
 const ApiInfo = z.object({ name: z.string(), version: z.string(), docs: z.string() });
 
@@ -15,4 +16,5 @@ export function registerV1Routes(v1: Router): void {
     responses: { 200: { description: 'API name, version and docs location', schema: ApiInfo } },
     handler: () => ({ name: 'Jatelo Fleet Solutions API', version, docs: '/api/docs' }),
   });
+  registerAuthRoutes(v1);
 }

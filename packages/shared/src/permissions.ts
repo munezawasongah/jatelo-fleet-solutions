@@ -1,0 +1,141 @@
+export const ROLES = [
+  'super_admin',
+  'company_admin',
+  'fleet_manager',
+  'dispatcher',
+  'mechanic',
+  'accountant',
+  'driver',
+] as const;
+export type Role = (typeof ROLES)[number];
+
+/** Roles that must have 2FA enabled before using anything beyond sign-in and 2FA setup. */
+export const ADMIN_ROLES: readonly Role[] = ['super_admin', 'company_admin'];
+export const isAdminRole = (role: Role): boolean => ADMIN_ROLES.includes(role);
+
+export const PERMISSIONS = [
+  'platform:admin',
+  'tenant:settings',
+  'users:read',
+  'users:manage',
+  'billing:read',
+  'billing:manage',
+  'audit:read',
+  'vehicles:read',
+  'vehicles:write',
+  'devices:read',
+  'devices:assign',
+  'drivers:read',
+  'drivers:write',
+  'tracking:read',
+  'trips:read',
+  'trips:annotate',
+  'share_links:create',
+  'geofences:read',
+  'geofences:write',
+  'routes:read',
+  'routes:write',
+  'jobs:read',
+  'jobs:write',
+  'jobs:dispatch',
+  'maintenance:read',
+  'maintenance:write',
+  'parts:read',
+  'parts:write',
+  'inspections:read',
+  'inspections:submit',
+  'inspections:templates',
+  'fuel:read',
+  'fuel:write',
+  'fuel:submit',
+  'fuel:import',
+  'driver_scores:read',
+  'events:review',
+  'alerts:read',
+  'alerts:acknowledge',
+  'alert_rules:manage',
+  'reports:read',
+  'reports:schedule',
+  'analytics:read',
+  'messages:read',
+  'messages:write',
+  'driver_app:use',
+] as const;
+export type Permission = (typeof PERMISSIONS)[number];
+
+const TENANT_ALL: readonly Permission[] = PERMISSIONS.filter(
+  (p) => p !== 'platform:admin' && p !== 'driver_app:use',
+);
+const without = (list: readonly Permission[], remove: Permission[]): Permission[] =>
+  list.filter((p) => !remove.includes(p));
+
+export const ROLE_PERMISSIONS: Record<Role, readonly Permission[]> = {
+  super_admin: PERMISSIONS,
+  company_admin: TENANT_ALL,
+  fleet_manager: without(TENANT_ALL, [
+    'tenant:settings',
+    'users:manage',
+    'billing:read',
+    'billing:manage',
+  ]),
+  dispatcher: [
+    'vehicles:read',
+    'devices:read',
+    'drivers:read',
+    'tracking:read',
+    'trips:read',
+    'trips:annotate',
+    'share_links:create',
+    'geofences:read',
+    'routes:read',
+    'routes:write',
+    'jobs:read',
+    'jobs:write',
+    'jobs:dispatch',
+    'inspections:read',
+    'driver_scores:read',
+    'alerts:read',
+    'alerts:acknowledge',
+    'messages:read',
+    'messages:write',
+  ],
+  mechanic: [
+    'vehicles:read',
+    'devices:read',
+    'tracking:read',
+    'maintenance:read',
+    'maintenance:write',
+    'parts:read',
+    'parts:write',
+    'inspections:read',
+    'inspections:templates',
+    'fuel:read',
+    'alerts:read',
+  ],
+  accountant: [
+    'vehicles:read',
+    'drivers:read',
+    'trips:read',
+    'fuel:read',
+    'fuel:write',
+    'fuel:import',
+    'maintenance:read',
+    'parts:read',
+    'reports:read',
+    'reports:schedule',
+    'analytics:read',
+    'billing:read',
+    'alerts:read',
+  ],
+  driver: [
+    'driver_app:use',
+    'inspections:submit',
+    'fuel:submit',
+    'jobs:read',
+    'messages:read',
+    'messages:write',
+  ],
+};
+
+export const can = (role: Role, permission: Permission): boolean =>
+  ROLE_PERMISSIONS[role].includes(permission);
