@@ -1,10 +1,8 @@
 // Publishes a scripted night journey for KDB 202B straight onto the telemetry stream.
-import '@jfs/db';
-import pg from 'pg';
+import { createPool } from '@jfs/db';
 import { Redis } from 'ioredis';
 
-const db = new pg.Client({ connectionString: process.env.SYSTEM_DATABASE_URL });
-await db.connect();
+const db = createPool(process.env.SYSTEM_DATABASE_URL!, { max: 1 });
 const dev = (
   await db.query<{ id: string; tenant_id: string }>(
     `SELECT id, tenant_id FROM devices WHERE identifier = '350209100000002'`,

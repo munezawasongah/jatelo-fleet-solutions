@@ -19,13 +19,7 @@ export async function resolveAssignment(deviceId: string): Promise<Assignment> {
   const hit = assignments.get(deviceId);
   if (hit && Date.now() - hit.at < ASSIGN_TTL) return hit.value;
   const row = (
-    await db.query<{
-      vehicle_id: string;
-      odometer_km: string;
-      engine_hours: string;
-      odometer_source: string;
-      driver_id: string | null;
-    }>(
+    await db.query<{ vehicle_id: string; odometer_km: string; engine_hours: string; odometer_source: string; speed_limit_kph: number | null; driver_id: string | null }>(
       `SELECT da.vehicle_id, v.odometer_km, v.engine_hours, v.odometer_source, v.speed_limit_kph, dva.driver_id
        FROM device_assignments da
        JOIN vehicles v ON v.id = da.vehicle_id AND v.deleted_at IS NULL
@@ -35,20 +29,9 @@ export async function resolveAssignment(deviceId: string): Promise<Assignment> {
     )
   ).rows[0];
   const value: Assignment = row
-    ? {
-        vehicleId: row.vehicle_id,
-        driverId: row.driver_id,
-        odometerKm: Number(row.odometer_km),
-        engineHours: Number(row.engine_hours),
-        odometerManual: row.odometer_source === 'manual',
-      }
-    : {
-        vehicleId: null,
-        driverId: null,
-        odometerKm: null,
-        engineHours: null,
-        odometerManual: false,
-      };
+    ? { vehicleId: row.vehicle_id, driverId: row.driver_id, odometerKm: Number(row.odometer_km), engineHours: Number(row.engine_hours),
+        odometerManual: row.odometer_source === 'manual', speedLimitKph: row.speed_limit_kph }
+    : { vehicleId: null, driverId: null, odometerKm: null, engineHours: null, odometerManual: false, speedLimitKph: null };
   assignments.set(deviceId, { at: Date.now(), value });
   return value;
 }
