@@ -139,6 +139,21 @@ export async function processDevice(
       odometerKm: state.odometerKm,
       engineHours: state.engineHours,
     });
+    if (state.trips) {
+      advanceTrip(tripCtx, state.trips, {
+        at,
+        lat,
+        lng,
+        valid,
+        speed: rec.speedKph,
+        ignition: rec.ignition,
+        stepKm: valid ? stepKm : 0,
+        driverId,
+        odometerKm: state.odometerKm,
+        fuelL: rec.fuelLevelL,
+        harsh: rec.events.filter((e) => e.type.startsWith('harsh_')).length,
+      });
+    }
     for (const ev of rec.events) {
       events.push({
         at: new Date(at),
