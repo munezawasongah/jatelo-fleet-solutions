@@ -17,3 +17,15 @@ export {
   type EncodeRecord,
   type EncodeIo,
 } from './teltonika/encoder.js';
+export { Gt06Decoder, type Gt06Frame } from './gt06/decoder.js';
+export { crcX25 } from './gt06/crc.js';
+export { gt06Packet } from './gt06/packet.js';
+export {
+  encodeGt06Alarm,
+  encodeGt06Command,
+  encodeGt06Heartbeat,
+  encodeGt06Location,
+  encodeGt06Login,
+  type Gt06Fix,
+  type Gt06Terminal,
+} from './gt06/encoder.js';

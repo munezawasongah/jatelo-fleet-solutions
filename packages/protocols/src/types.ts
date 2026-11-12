@@ -47,3 +47,17 @@ export interface TelemetryRecord {
   /** Raw IO values, JSON-safe, for diagnostics and per-device mappings. */
   io: Record<string, number | string>;
 }
+
+/** Device state reported without a position (e.g. GT06 heartbeats, voltage info packets). */
+export interface StatusUpdate {
+  receivedAt: Date;
+  ignition: boolean | null;
+  armed: boolean | null;
+  charging: boolean | null;
+  /** True when the engine/fuel cut (immobiliser) output is active. */
+  engineCut: boolean | null;
+  batteryLevelPct: number | null;
+  extVoltageMv: number | null;
+  gsmSignalPct: number | null;
+  events: DeviceEvent[];
+}
