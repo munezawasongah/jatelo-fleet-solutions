@@ -5,3 +5,4 @@ packages:
 allowBuilds:
   '@scarf/scarf': false
   esbuild: true
+  msgpackr-extract: set this to true or false
