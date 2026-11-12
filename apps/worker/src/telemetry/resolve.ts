@@ -6,6 +6,7 @@ export interface Assignment {
   odometerKm: number | null;
   engineHours: number | null;
   odometerManual: boolean;
+  speedLimitKph: number | null;
 }
 
 const ASSIGN_TTL = 60_000;
@@ -25,7 +26,7 @@ export async function resolveAssignment(deviceId: string): Promise<Assignment> {
       odometer_source: string;
       driver_id: string | null;
     }>(
-      `SELECT da.vehicle_id, v.odometer_km, v.engine_hours, v.odometer_source, dva.driver_id
+      `SELECT da.vehicle_id, v.odometer_km, v.engine_hours, v.odometer_source, v.speed_limit_kph, dva.driver_id
        FROM device_assignments da
        JOIN vehicles v ON v.id = da.vehicle_id AND v.deleted_at IS NULL
        LEFT JOIN driver_vehicle_assignments dva ON dva.vehicle_id = da.vehicle_id AND dva.ends_at IS NULL AND dva.starts_at <= now()

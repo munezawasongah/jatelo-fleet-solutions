@@ -7,6 +7,14 @@ import { logger } from '../logger.js';
 import { resolveAssignment, resolveTag } from './resolve.js';
 import { liveState, loadState, saveState } from './state.js';
 import type { DeviceState, WireMessage, WireRecord } from './types.js';
+import { tenantSettings } from './settings.js';
+import {
+  advanceTrip,
+  newTripState,
+  tripUpdateOp,
+  type ComputedEvent,
+  type TripCtx,
+} from './trips.js';
 
 const MAX_FUTURE_MS = 5 * 60_000;
 const MAX_AGE_MS = 34 * 86_400_000;
@@ -41,6 +49,22 @@ export async function processDevice(
   const assignment = await resolveAssignment(deviceId);
   const state: DeviceState = await loadState(deviceId, assignment);
   const prevState = state.state;
+  const cfg = await tenantSettings(tenantId);
+  const tripCtx: TripCtx = {
+    tenantId,
+    deviceId,
+    speedLimitKph: assignment.speedLimitKph ?? cfg.speedLimitKph,
+    cfg,
+    ops: [],
+    events: [],
+  };
+  if (assignment.vehicleId && state.trips && state.trips.vehicleId !== assignment.vehicleId) {
+    // device moved to another vehicle: close the old vehicle's trip where it was last seen
+    const old = state.trips;
+    if (old.trip) tripCtx.ops.push(tripUpdateOp(old.trip, old.trip.lastAt));
+    state.trips = undefined;
+  }
+  if (assignment.vehicleId && !state.trips) state.trips = newTripState(assignment.vehicleId);
   const now = Date.now();
   let dropped = 0;
 
@@ -202,6 +226,11 @@ export async function processDevice(
         ],
       );
     }
+    for (const op of tripCtx.ops) await c.query(op.text, op.values);
+    if (state.trips?.trip?.confirmed) {
+      const u = tripUpdateOp(state.trips.trip, null);
+      await c.query(u.text, u.values);
+    }
     for (const e of events) {
       await c.query(
         `INSERT INTO driving_events (tenant_id, vehicle_id, device_id, driver_id, event_type, severity, occurred_at, lat, lng, speed_kph, value, source, details)
@@ -334,6 +363,29 @@ export async function processDevice(
         speed_kph: e.speed,
         value: e.ev.value ?? null,
         source: e.source,
+      }),
+    );
+  }
+  for (const e of tripCtx.events as ComputedEvent[]) {
+    await redis.xadd(
+      EVENTS_STREAM,
+      'MAXLEN',
+      '~',
+      '500000',
+      '*',
+      'data',
+      JSON.stringify({
+        type: e.type,
+        tenant_id: tenantId,
+        vehicle_id: vehicleId,
+        device_id: deviceId,
+        driver_id: e.driverId,
+        at: new Date(e.at).toISOString(),
+        lat: e.lat,
+        lng: e.lng,
+        speed_kph: e.speed,
+        value: e.value,
+        source: 'computed',
       }),
     );
   }

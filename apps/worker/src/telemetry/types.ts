@@ -1,4 +1,5 @@
 import type { DeviceEvent, StatusUpdate } from '@jfs/protocols';
+import type { TripState } from './trips.js';
 
 /** A TelemetryRecord after JSON transport (dates are ISO strings). */
 export interface WireRecord {
@@ -50,4 +51,5 @@ export interface DeviceState {
   ignition: boolean | null;
   state: LiveState;
   stateSince: number;
+  trips?: TripState;
 }

@@ -1,6 +1,7 @@
 import { db, redis } from '../infra.js';
 import type { Assignment } from './resolve.js';
 import type { DeviceState, LiveState } from './types.js';
+import { newTripState } from './trips.js';
 
 const key = (deviceId: string): string => `wstate:${deviceId}`;
 const TTL_S = 7 * 86400;
@@ -8,6 +9,7 @@ const TTL_S = 7 * 86400;
 export async function loadState(deviceId: string, assignment: Assignment): Promise<DeviceState> {
   const raw = await redis.get(key(deviceId));
   if (raw) return JSON.parse(raw) as DeviceState;
+  const trips = await recoverTrips(assignment.vehicleId);
   const s = (
     await db.query<{
       lat: number | null;
@@ -41,6 +43,7 @@ export async function loadState(deviceId: string, assignment: Assignment): Promi
     ignition: s?.ignition ?? null,
     state: s?.state ?? 'never',
     stateSince: s?.state_since?.getTime() ?? Date.now(),
+    ...(trips ? { trips } : {}),
   };
 }
 
@@ -61,4 +64,25 @@ export function liveState(
   if (speedKph > 5 || (movement === true && speedKph > 2)) return 'moving';
   if (ignition === true) return 'idle';
   return 'stopped';
+}
+
+/**
+ * Worker state was lost (Redis flushed/expired): close any open trip at its last update so a new trip can never overlap it,
+ * and keep tracking the latest open stop.
+ */
+async function recoverTrips(vehicleId: string | null): Promise<DeviceState['trips']> {
+  if (!vehicleId) return undefined;
+  await db.query(
+    `UPDATE trips SET ended_at = greatest(started_at, updated_at) WHERE vehicle_id = $1 AND ended_at IS NULL`,
+    [vehicleId],
+  );
+  const stop = (
+    await db.query<{ id: string; started_at: Date }>(
+      'SELECT id, started_at FROM stops WHERE vehicle_id = $1 AND ended_at IS NULL ORDER BY started_at DESC LIMIT 1',
+      [vehicleId],
+    )
+  ).rows[0];
+  const ts = newTripState(vehicleId);
+  if (stop) ts.stop = { id: stop.id, startedAt: stop.started_at.getTime() };
+  return ts;
 }

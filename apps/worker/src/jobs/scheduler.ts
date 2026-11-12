@@ -3,10 +3,12 @@ import { bullConnection } from '../infra.js';
 import { logger } from '../logger.js';
 import { detectOffline } from './offline.js';
 import { maintainPartitions } from './partitions.js';
+import { closeSilentTrips } from './trips.js';
 
 const JOBS: Record<string, () => Promise<unknown>> = {
   partitions: maintainPartitions,
   offline: detectOffline,
+  trips: closeSilentTrips,
 };
 export const jobNames = Object.keys(JOBS);
 
@@ -24,6 +26,11 @@ export async function startScheduler(): Promise<{ close(): Promise<void> }> {
     { name: 'partitions' },
   );
   await queue.upsertJobScheduler('offline-every-minute', { every: 60_000 }, { name: 'offline' });
+  await queue.upsertJobScheduler(
+    'silent-trips-every-5-minutes',
+    { every: 300_000 },
+    { name: 'trips' },
+  );
   const worker = new Worker('maintenance', async (job) => runJob(job.name), {
     connection: bullConnection,
     concurrency: 1,
