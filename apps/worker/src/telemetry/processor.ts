@@ -8,6 +8,7 @@ import { resolveAssignment, resolveTag } from './resolve.js';
 import { liveState, loadState, saveState } from './state.js';
 import type { DeviceState, WireMessage, WireRecord } from './types.js';
 import { tenantSettings } from './settings.js';
+import { processGeofences, type GeofenceEvent } from './geofences.js';
 import {
   advanceTrip,
   newTripState,
@@ -74,6 +75,14 @@ export async function processDevice(
   const statuses = messages.filter((m) => m.kind === 'status' && m.status).map((m) => m.status!);
 
   const points: PointRow[] = [];
+  const ignitionChanges: {
+    on: boolean;
+    at: number;
+    lat: number;
+    lng: number;
+    driverId: string | null;
+  }[] = [];
+  let geoEvents: GeofenceEvent[] = [];
   const events: {
     at: Date;
     lat: number | null;
@@ -124,6 +133,9 @@ export async function processDevice(
     if (ls !== state.state) {
       state.state = ls;
       state.stateSince = at;
+    }
+    if (rec.ignition !== null && state.ignition !== null && rec.ignition !== state.ignition) {
+      ignitionChanges.push({ on: rec.ignition, at, lat, lng, driverId });
     }
     if (rec.ignition !== null) state.ignition = rec.ignition;
     if (valid) state.lastValid = { lat: rec.lat, lng: rec.lng, at };
@@ -242,6 +254,24 @@ export async function processDevice(
       );
     }
     for (const op of tripCtx.ops) await c.query(op.text, op.values);
+    if (vehicleId) {
+      geoEvents = await processGeofences(
+        c,
+        tenantId,
+        vehicleId,
+        deviceId,
+        points
+          .filter((p) => p.valid)
+          .map((p) => ({
+            at: p.recordedAt.getTime(),
+            lat: p.lat,
+            lng: p.lng,
+            speed: p.rec.speedKph,
+            driverId: p.driverId,
+          })),
+        cfg.toleranceKph,
+      );
+    }
     if (state.trips?.trip?.confirmed) {
       const u = tripUpdateOp(state.trips.trip, null);
       await c.query(u.text, u.values);
@@ -380,6 +410,41 @@ export async function processDevice(
         source: e.source,
       }),
     );
+  }
+  const publishEvent = (e: Record<string, unknown>): Promise<unknown> =>
+    redis.xadd(
+      EVENTS_STREAM,
+      'MAXLEN',
+      '~',
+      '500000',
+      '*',
+      'data',
+      JSON.stringify({ tenant_id: tenantId, vehicle_id: vehicleId, device_id: deviceId, ...e }),
+    );
+  for (const g of geoEvents) {
+    await publishEvent({
+      type: g.type,
+      driver_id: g.driverId,
+      at: new Date(g.at).toISOString(),
+      lat: g.lat,
+      lng: g.lng,
+      speed_kph: Math.round(g.speed),
+      value: g.type === 'overspeed' ? Math.round(g.speed - (g.limit ?? 0)) : (g.dwellS ?? null),
+      geofence_id: g.geofenceId,
+      geofence_name: g.geofenceName,
+      speed_limit_kph: g.limit ?? null,
+      source: 'computed',
+    });
+  }
+  for (const ig of ignitionChanges) {
+    await publishEvent({
+      type: ig.on ? 'ignition_on' : 'ignition_off',
+      driver_id: ig.driverId,
+      at: new Date(ig.at).toISOString(),
+      lat: ig.lat,
+      lng: ig.lng,
+      source: 'device',
+    });
   }
   for (const e of tripCtx.events as ComputedEvent[]) {
     await redis.xadd(

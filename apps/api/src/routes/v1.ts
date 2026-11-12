@@ -10,6 +10,8 @@ import { registerDeviceRoutes } from './devices.js';
 import { registerDriverRoutes } from './drivers.js';
 import { registerShiftRoutes } from './shifts.js';
 import { registerTrackingRoutes } from './tracking.js';
+import { registerGeoRoutes } from './geo.js';
+import { registerAlertRoutes } from './alerts.js';
 
 const ApiInfo = z.object({ name: z.string(), version: z.string(), docs: z.string() });
 
@@ -31,4 +33,6 @@ export function registerV1Routes(v1: Router): void {
   registerDriverRoutes(v1);
   registerShiftRoutes(v1);
   registerTrackingRoutes(v1);
+  registerGeoRoutes(v1);
+  registerAlertRoutes(v1);
 }
