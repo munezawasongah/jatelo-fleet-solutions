@@ -14,3 +14,4 @@ apps/driver/android/
 apps/driver/ios/
 infra/osrm/data/
 .claude-sync/
+dump.rdb

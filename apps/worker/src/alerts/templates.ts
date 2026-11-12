@@ -116,8 +116,8 @@ const EN: Record<string, T> = {
     message: `Fault code ${d.extra} reported by ${d.plate}.`,
   }),
   service_due: (d) => ({
-    title: `Service ${d.extra}: ${d.plate}`,
-    message: `${d.plate}: ${d.place} is ${d.extra}.`,
+    title: `Service reminder: ${d.plate}`,
+    message: `${d.plate}: ${d.extra}.`,
   }),
   document_expiry: (d) => ({
     title: `Document expiring: ${d.plate}`,
@@ -243,8 +243,8 @@ const SW: Record<string, T> = {
     message: `Msimbo wa hitilafu ${d.extra} umeripotiwa na ${d.plate}.`,
   }),
   service_due: (d) => ({
-    title: `Huduma ${d.extra}: ${d.plate}`,
-    message: `${d.plate}: ${d.place} - ${d.extra}.`,
+    title: `Kikumbusho cha huduma: ${d.plate}`,
+    message: `${d.plate}: ${d.extra}.`,
   }),
   document_expiry: (d) => ({
     title: `Hati inaisha: ${d.plate}`,

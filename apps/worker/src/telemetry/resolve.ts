@@ -7,6 +7,7 @@ export interface Assignment {
   engineHours: number | null;
   odometerManual: boolean;
   speedLimitKph: number | null;
+  tankL: number | null;
 }
 
 const ASSIGN_TTL = 60_000;
@@ -26,8 +27,9 @@ export async function resolveAssignment(deviceId: string): Promise<Assignment> {
       odometer_source: string;
       speed_limit_kph: number | null;
       driver_id: string | null;
+      tank_capacity_l: string | null;
     }>(
-      `SELECT da.vehicle_id, v.odometer_km, v.engine_hours, v.odometer_source, v.speed_limit_kph, dva.driver_id
+      `SELECT da.vehicle_id, v.odometer_km, v.engine_hours, v.odometer_source, v.speed_limit_kph, v.tank_capacity_l, dva.driver_id
        FROM device_assignments da
        JOIN vehicles v ON v.id = da.vehicle_id AND v.deleted_at IS NULL
        LEFT JOIN driver_vehicle_assignments dva ON dva.vehicle_id = da.vehicle_id AND dva.ends_at IS NULL AND dva.starts_at <= now()
@@ -43,6 +45,7 @@ export async function resolveAssignment(deviceId: string): Promise<Assignment> {
         engineHours: Number(row.engine_hours),
         odometerManual: row.odometer_source === 'manual',
         speedLimitKph: row.speed_limit_kph,
+        tankL: row.tank_capacity_l ? Number(row.tank_capacity_l) : null,
       }
     : {
         vehicleId: null,
@@ -51,6 +54,7 @@ export async function resolveAssignment(deviceId: string): Promise<Assignment> {
         engineHours: null,
         odometerManual: false,
         speedLimitKph: null,
+        tankL: null,
       };
   assignments.set(deviceId, { at: Date.now(), value });
   return value;

@@ -84,3 +84,14 @@ export async function headObject(
 export async function deleteObject(key: string): Promise<void> {
   await s3.send(new DeleteObjectCommand({ Bucket, Key: key }));
 }
+
+/** Downloads an object fully (imports and report attachments; keep to small files). */
+export async function getObjectBuffer(key: string): Promise<Buffer> {
+  const r = await s3.send(new GetObjectCommand({ Bucket, Key: key }));
+  return Buffer.from(await r.Body!.transformToByteArray());
+}
+
+/** Uploads server-generated content (reports, invoices). */
+export async function putObject(key: string, body: Buffer, contentType: string): Promise<void> {
+  await s3.send(new PutObjectCommand({ Bucket, Key: key, Body: body, ContentType: contentType }));
+}

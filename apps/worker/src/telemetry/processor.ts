@@ -9,6 +9,7 @@ import { liveState, loadState, saveState } from './state.js';
 import type { DeviceState, WireMessage, WireRecord } from './types.js';
 import { tenantSettings } from './settings.js';
 import { processGeofences, type GeofenceEvent } from './geofences.js';
+import { advanceFuel, type FuelEvent } from './fuel.js';
 import {
   advanceTrip,
   newTripState,
@@ -83,6 +84,9 @@ export async function processDevice(
     driverId: string | null;
   }[] = [];
   let geoEvents: GeofenceEvent[] = [];
+  const fuelEvents: (FuelEvent & { driverId: string | null })[] = [];
+  const duplicateFuel = new Set<FuelEvent>();
+  let lowFuel: { pct: number; at: number; lat: number; lng: number } | null = null;
   const events: {
     at: Date;
     lat: number | null;
@@ -133,6 +137,22 @@ export async function processDevice(
     if (ls !== state.state) {
       state.state = ls;
       state.stateSince = at;
+    }
+    const fuelL =
+      rec.fuelLevelL ??
+      (rec.fuelLevelPct !== null && assignment.tankL
+        ? (rec.fuelLevelPct * assignment.tankL) / 100
+        : null);
+    if (fuelL !== null && valid) {
+      const f = advanceFuel(state.fuel, at, fuelL, rec.speedKph, lat, lng, assignment.tankL);
+      state.fuel = f.state;
+      if (f.event) fuelEvents.push({ ...f.event, driverId });
+      const pct = rec.fuelLevelPct ?? (assignment.tankL ? (fuelL / assignment.tankL) * 100 : null);
+      const dayKey = new Date(at).toISOString().slice(0, 10);
+      if (pct !== null && pct <= 15 && state.fuel.lowAlertDay !== dayKey) {
+        state.fuel.lowAlertDay = dayKey;
+        lowFuel = { pct: Math.round(pct), at, lat, lng };
+      }
     }
     if (rec.ignition !== null && state.ignition !== null && rec.ignition !== state.ignition) {
       ignitionChanges.push({ on: rec.ignition, at, lat, lng, driverId });
@@ -254,6 +274,33 @@ export async function processDevice(
       );
     }
     for (const op of tripCtx.ops) await c.query(op.text, op.values);
+    if (vehicleId) {
+      for (const f of fuelEvents) {
+        const r = await c.query<{ id: string }>(
+          `INSERT INTO fuel_events (tenant_id, vehicle_id, device_id, driver_id, event_type, started_at, ended_at, level_before_l, level_after_l, change_l, lat, lng,
+             matched_fuel_log_id)
+           VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,
+             (SELECT id FROM fuel_logs WHERE vehicle_id = $2 AND deleted_at IS NULL AND $5 = 'refuel' AND filled_at BETWEEN $6::timestamptz - interval '2 hours' AND $7::timestamptz + interval '2 hours'
+              ORDER BY abs(litres - ($9 - $8)) LIMIT 1))
+           ON CONFLICT DO NOTHING RETURNING id`,
+          [
+            tenantId,
+            vehicleId,
+            deviceId,
+            f.driverId,
+            f.type,
+            new Date(f.startedAt),
+            new Date(f.endedAt),
+            f.before.toFixed(2),
+            f.after.toFixed(2),
+            (f.after - f.before).toFixed(2),
+            f.lat,
+            f.lng,
+          ],
+        );
+        if (!r.rowCount) duplicateFuel.add(f);
+      }
+    }
     if (vehicleId) {
       geoEvents = await processGeofences(
         c,
@@ -434,6 +481,27 @@ export async function processDevice(
       geofence_name: g.geofenceName,
       speed_limit_kph: g.limit ?? null,
       source: 'computed',
+    });
+  }
+  for (const f of fuelEvents.filter((x) => !duplicateFuel.has(x))) {
+    await publishEvent({
+      type: f.type === 'drain' ? 'fuel_drain' : 'refuel',
+      driver_id: f.driverId,
+      at: new Date(f.endedAt).toISOString(),
+      lat: f.lat,
+      lng: f.lng,
+      value: Math.round(Math.abs(f.after - f.before) * 10) / 10,
+      source: 'sensor',
+    });
+  }
+  if (lowFuel) {
+    await publishEvent({
+      type: 'fuel_level_low',
+      at: new Date(lowFuel.at).toISOString(),
+      lat: lowFuel.lat,
+      lng: lowFuel.lng,
+      value: lowFuel.pct,
+      source: 'sensor',
     });
   }
   for (const ig of ignitionChanges) {

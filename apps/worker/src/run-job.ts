@@ -9,6 +9,8 @@ if (!name) {
 try {
   console.log(JSON.stringify({ job: name, result: await runJob(name) }));
 } finally {
+  const { closeAlertResources } = await import('./alerts/engine.js');
+  await closeAlertResources();
   await Promise.allSettled([db.end(), redis.quit(), bullConnection.quit()]);
   blocking.disconnect();
 }

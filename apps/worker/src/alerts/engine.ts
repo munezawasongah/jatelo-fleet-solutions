@@ -588,3 +588,9 @@ export async function runAlertEngine(signal: AbortSignal): Promise<{ close(): Pr
 export async function publishEvent(e: VehicleEvent): Promise<void> {
   await redis.xadd(EVENTS_STREAM, 'MAXLEN', '~', '500000', '*', 'data', JSON.stringify(e));
 }
+
+/** Closes module-level queues/connections (for one-off scripts). */
+export async function closeAlertResources(): Promise<void> {
+  await notifyQueue.close();
+  alertReader.disconnect();
+}

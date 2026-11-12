@@ -4,11 +4,17 @@ import { logger } from '../logger.js';
 import { detectOffline } from './offline.js';
 import { maintainPartitions } from './partitions.js';
 import { closeSilentTrips } from './trips.js';
+import { buildRollups } from './rollups.js';
+import { expiryReminders, serviceReminders } from './reminders.js';
 
 const JOBS: Record<string, () => Promise<unknown>> = {
   partitions: maintainPartitions,
   offline: detectOffline,
   trips: closeSilentTrips,
+  rollups: () => buildRollups(1),
+  'rollups-backfill': () => buildRollups(7),
+  services: serviceReminders,
+  expiries: expiryReminders,
 };
 export const jobNames = Object.keys(JOBS);
 
@@ -30,6 +36,26 @@ export async function startScheduler(): Promise<{ close(): Promise<void> }> {
     'silent-trips-every-5-minutes',
     { every: 300_000 },
     { name: 'trips' },
+  );
+  await queue.upsertJobScheduler(
+    'rollups-every-10-minutes',
+    { every: 600_000 },
+    { name: 'rollups' },
+  );
+  await queue.upsertJobScheduler(
+    'rollups-nightly',
+    { pattern: '40 21 * * *', tz: 'UTC' },
+    { name: 'rollups-backfill' },
+  );
+  await queue.upsertJobScheduler(
+    'service-reminders-hourly',
+    { every: 3_600_000 },
+    { name: 'services' },
+  );
+  await queue.upsertJobScheduler(
+    'expiry-reminders-hourly',
+    { every: 3_600_000 },
+    { name: 'expiries' },
   );
   const worker = new Worker('maintenance', async (job) => runJob(job.name), {
     connection: bullConnection,

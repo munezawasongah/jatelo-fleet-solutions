@@ -12,6 +12,9 @@ import { registerShiftRoutes } from './shifts.js';
 import { registerTrackingRoutes } from './tracking.js';
 import { registerGeoRoutes } from './geo.js';
 import { registerAlertRoutes } from './alerts.js';
+import { registerMaintenanceRoutes } from './maintenance.js';
+import { registerFuelRoutes } from './fuel.js';
+import { registerBehaviourRoutes } from './behaviour.js';
 
 const ApiInfo = z.object({ name: z.string(), version: z.string(), docs: z.string() });
 
@@ -35,4 +38,7 @@ export function registerV1Routes(v1: Router): void {
   registerTrackingRoutes(v1);
   registerGeoRoutes(v1);
   registerAlertRoutes(v1);
+  registerMaintenanceRoutes(v1);
+  registerFuelRoutes(v1);
+  registerBehaviourRoutes(v1);
 }
