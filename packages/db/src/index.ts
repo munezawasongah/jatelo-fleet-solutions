@@ -68,3 +68,4 @@ export async function withTenant<T>(
     return fn(client);
   });
 }
+export * from './billing.js';

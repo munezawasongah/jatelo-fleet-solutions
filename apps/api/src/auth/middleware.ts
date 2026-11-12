@@ -2,7 +2,7 @@ import type { Request, RequestHandler } from 'express';
 import { isAdminRole, ROLE_PERMISSIONS, type Permission, type Role } from '@jfs/shared';
 import { withTenant, type PoolClient } from '@jfs/db';
 import { AppError, forbidden, unauthorized } from '../http/errors.js';
-import { appPool } from '../infra/db.js';
+import { appPool, systemPool } from '../infra/db.js';
 import { isSessionRevoked, verifyAccess } from './tokens.js';
 
 export interface AuthContext {
@@ -76,10 +76,35 @@ export function requirePermission(...permissions: Permission[]): RequestHandler 
   };
 }
 
-/** Standard protection for business endpoints: signed in, 2FA-ready, and holding every listed permission. */
+const tenantStatus = new Map<string, { at: number; status: string }>();
+/** Suspended companies can only reach billing (to pay) and their own profile. Status cached for 30 s per API instance. */
+export const requireTenantActive: RequestHandler = async (req, _res, next) => {
+  const tid = req.auth?.tenantId;
+  if (!tid) return next();
+  let hit = tenantStatus.get(tid);
+  if (!hit || Date.now() - hit.at > 30_000) {
+    try {
+      const r = await systemPool.query<{ status: string }>('SELECT status FROM tenants WHERE id = $1', [tid]);
+      hit = { at: Date.now(), status: r.rows[0]?.status ?? 'cancelled' };
+      tenantStatus.set(tid, hit);
+    } catch (err) {
+      return next(err);
+    }
+  }
+  if (hit.status === 'suspended' || hit.status === 'cancelled') {
+    const path = req.originalUrl.split('?')[0] ?? '';
+    if (hit.status === 'cancelled' || !(path.startsWith('/api/v1/billing') || path.startsWith('/api/v1/auth')))
+      return next(new AppError(402, 'tenant_suspended', 'Your company account is suspended for non-payment. Please settle the outstanding invoice under Billing.'));
+  }
+  next();
+};
+export const forgetTenantStatus = (tenantId: string): void => void tenantStatus.delete(tenantId);
+
+/** Standard protection for business endpoints: signed in, 2FA-ready, company in good standing, and holding every listed permission. */
 export const guard = (...permissions: Permission[]): RequestHandler[] => [
   authenticate,
   requireMfaReady,
+  requireTenantActive,
   requirePermission(...permissions),
 ];
 

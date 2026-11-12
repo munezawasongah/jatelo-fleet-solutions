@@ -18,6 +18,9 @@ import { registerBehaviourRoutes } from './behaviour.js';
 import { registerDispatchRoutes } from './dispatch.js';
 import { registerMessageRoutes } from './messages.js';
 import { registerAnalyticsRoutes } from './analytics.js';
+import { registerAdminRoutes } from './admin.js';
+import { registerBillingRoutes } from './billing.js';
+import { registerPlatformRoutes } from './platform.js';
 
 const ApiInfo = z.object({ name: z.string(), version: z.string(), docs: z.string() });
 
@@ -47,4 +50,7 @@ export function registerV1Routes(v1: Router): void {
   registerDispatchRoutes(v1);
   registerMessageRoutes(v1);
   registerAnalyticsRoutes(v1);
+  registerAdminRoutes(v1);
+  registerBillingRoutes(v1);
+  registerPlatformRoutes(v1);
 }

@@ -140,7 +140,8 @@ function assertCanSignIn(u: UserRow): void {
     throw new AppError(403, 'account_not_activated', 'Accept your invitation before signing in');
   if (u.status !== 'active')
     throw new AppError(403, 'account_disabled', 'This account has been disabled');
-  if (u.tenant_id && (u.tenant_status === 'suspended' || u.tenant_status === 'cancelled')) {
+  // company admins may still sign in to a suspended account to settle invoices (everything except billing is blocked)
+  if (u.tenant_id && (u.tenant_status === 'cancelled' || (u.tenant_status === 'suspended' && u.role !== 'company_admin'))) {
     throw new AppError(
       403,
       'tenant_suspended',
@@ -490,7 +491,7 @@ export function registerAuthRoutes(v1: Router): void {
           row.deleted_at ||
           row.status !== 'active' ||
           (row.tenant_id &&
-            (row.tenant_status === 'suspended' || row.tenant_status === 'cancelled'))
+            (row.tenant_status === 'cancelled' || (row.tenant_status === 'suspended' && row.role !== 'company_admin')))
         ) {
           await revokeSessions(
             c,

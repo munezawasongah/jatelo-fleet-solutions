@@ -16,13 +16,13 @@ export type Row = Record<string, unknown>;
 const NUMERIC_OIDS = new Set([20, 21, 23, 700, 701, 1700]);
 
 /** Serialises pg rows: numerics/bigints become numbers, dates become ISO strings (via JSON). */
-export function rowsOf(r: QueryResult<Row>): Row[] {
+export function rowsOf(r: QueryResult<Row>, opts: { keep?: ('total' | 'tenant_id')[] } = {}): Row[] {
   const numeric = r.fields.filter((f) => NUMERIC_OIDS.has(f.dataTypeID)).map((f) => f.name);
   return r.rows.map((row) => {
     const out: Row = { ...row };
     for (const k of numeric) if (out[k] !== null && out[k] !== undefined) out[k] = Number(out[k]);
-    delete out.total;
-    delete out.tenant_id;
+    if (!opts.keep?.includes('total')) delete out.total;
+    if (!opts.keep?.includes('tenant_id')) delete out.tenant_id;
     return out;
   });
 }

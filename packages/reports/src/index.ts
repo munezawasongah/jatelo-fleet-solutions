@@ -3,6 +3,7 @@ import PDFDocument from 'pdfkit';
 import { DEFS, REPORT_TYPES, type ColType, type Column, type Locale, type Queryable, type ReportParams, type ReportType } from './definitions.js';
 
 export { DEFS, REPORT_TYPES };
+export { renderInvoicePdf, type InvoiceDoc } from './invoice.js';
 export type { ColType, Column, Locale, Queryable, ReportParams, ReportType };
 export type ReportFormat = 'pdf' | 'xlsx' | 'csv';
 
