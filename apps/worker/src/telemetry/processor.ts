@@ -1,3 +1,4 @@
+import { trackJobs } from './jobs.js';
 import type { DeviceEvent } from '@jfs/protocols';
 import { withTransaction } from '@jfs/db';
 import { EVENTS_STREAM, liveChannel } from '../config.js';
@@ -414,6 +415,11 @@ export async function processDevice(
   });
 
   await saveState(deviceId, state);
+
+  if (vehicleId && latest)
+    await trackJobs(tenantId, vehicleId, { lat: latest.lat, lng: latest.lng, speedKph: latest.rec.speedKph, at: latest.recordedAt }).catch((err) =>
+      logger.warn({ err }, 'job tracking failed'),
+    );
 
   // real-time fan-out (after commit)
   if (latest || lastStatus) {

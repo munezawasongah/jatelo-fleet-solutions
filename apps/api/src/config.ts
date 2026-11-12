@@ -54,6 +54,37 @@ const schema = z.object({
   S3_SECRET_ACCESS_KEY: z.string().min(8),
   S3_FORCE_PATH_STYLE: bool('true'),
   S3_AUTO_CREATE_BUCKET: bool('false'),
+  OSRM_URL: z
+    .string()
+    .optional()
+    .transform((v) => (v ? v : undefined)),
+  VROOM_URL: z
+    .string()
+    .optional()
+    .transform((v) => (v ? v : undefined)),
+  MPESA_ENV: z.enum(['sandbox', 'production']).default('sandbox'),
+  MPESA_CONSUMER_KEY: z
+    .string()
+    .optional()
+    .transform((v) => (v ? v : undefined)),
+  MPESA_CONSUMER_SECRET: z
+    .string()
+    .optional()
+    .transform((v) => (v ? v : undefined)),
+  MPESA_SHORTCODE: z
+    .string()
+    .optional()
+    .transform((v) => (v ? v : undefined)),
+  MPESA_PASSKEY: z
+    .string()
+    .optional()
+    .transform((v) => (v ? v : undefined)),
+  MPESA_CALLBACK_SECRET: z
+    .string()
+    .optional()
+    .transform((v) => (v ? v : undefined)),
+  MPESA_TRANSACTION_TYPE: z.enum(['CustomerPayBillOnline', 'CustomerBuyGoodsOnline']).default('CustomerPayBillOnline'),
+  INGEST_CONTROL_CHANNEL: z.string().default('ingest:cmd'),
 });
 
 const parsed = schema.safeParse(process.env);

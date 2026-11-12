@@ -1,0 +1,31 @@
+{
+  "name": "@jfs/reports",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "main": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "default": "./dist/index.js"
+    }
+  },
+  "files": [
+    "dist"
+  ],
+  "scripts": {
+    "build": "tsc -p tsconfig.json",
+    "typecheck": "tsc -p tsconfig.json --noEmit"
+  },
+  "dependencies": {
+    "@jfs/db": "workspace:*",
+    "exceljs": "^4.4.0",
+    "pdfkit": "^0.17.2"
+  },
+  "devDependencies": {
+    "@types/node": "^26.6.6",
+    "@types/pdfkit": "^0.17.3",
+    "typescript": "^7.0.2"
+  }
+}

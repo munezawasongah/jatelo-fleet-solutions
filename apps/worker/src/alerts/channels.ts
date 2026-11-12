@@ -62,12 +62,13 @@ export async function sendEmail(
   subject: string,
   text: string,
   html: string,
+  attachments?: { filename: string; content: Buffer; contentType: string }[],
 ): Promise<SendResult> {
   if (!mail) {
-    logger.info({ to, subject }, 'email (SMTP not configured - logged instead of sent)');
+    logger.info({ to, subject, attachments: attachments?.map((x) => `${x.filename} (${x.content.length} B)`) }, 'email (SMTP not configured - logged instead of sent)');
     return { status: 'skipped', provider: 'log' };
   }
-  const info = await mail.sendMail({ from: config.MAIL_FROM, to, subject, text, html });
+  const info = await mail.sendMail({ from: config.MAIL_FROM, to, subject, text, html, attachments });
   return { status: 'sent', provider: 'smtp', providerMessageId: info.messageId };
 }
 

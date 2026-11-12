@@ -6,6 +6,7 @@ import { maintainPartitions } from './partitions.js';
 import { closeSilentTrips } from './trips.js';
 import { buildRollups } from './rollups.js';
 import { expiryReminders, serviceReminders } from './reminders.js';
+import { runScheduledReports } from './reports.js';
 
 const JOBS: Record<string, () => Promise<unknown>> = {
   partitions: maintainPartitions,
@@ -15,6 +16,7 @@ const JOBS: Record<string, () => Promise<unknown>> = {
   'rollups-backfill': () => buildRollups(7),
   services: serviceReminders,
   expiries: expiryReminders,
+  reports: runScheduledReports,
 };
 export const jobNames = Object.keys(JOBS);
 
@@ -57,6 +59,7 @@ export async function startScheduler(): Promise<{ close(): Promise<void> }> {
     { every: 3_600_000 },
     { name: 'expiries' },
   );
+  await queue.upsertJobScheduler('reports-every-minute', { every: 60_000 }, { name: 'reports' });
   const worker = new Worker('maintenance', async (job) => runJob(job.name), {
     connection: bullConnection,
     concurrency: 1,

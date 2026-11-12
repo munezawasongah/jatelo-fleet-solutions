@@ -4,6 +4,7 @@ import { maintainPartitions } from './jobs/partitions.js';
 import { startScheduler } from './jobs/scheduler.js';
 import { logger } from './logger.js';
 import { runAlertEngine } from './alerts/engine.js';
+import { runPushConsumer } from './alerts/push.js';
 import { runTelemetryConsumer, telemetryStats } from './telemetry/consumer.js';
 
 const controller = new AbortController();
@@ -12,6 +13,7 @@ await maintainPartitions();
 const scheduler = await startScheduler();
 const consumer = runTelemetryConsumer(controller.signal);
 const alerts = await runAlertEngine(controller.signal);
+const push = await runPushConsumer(controller.signal);
 
 let last = { ...telemetryStats };
 setInterval(() => {
@@ -30,7 +32,7 @@ async function shutdown(signal: string): Promise<void> {
   setTimeout(() => process.exit(1), 15_000).unref();
   controller.abort();
   blocking.disconnect();
-  await Promise.allSettled([consumer, scheduler.close(), alerts.close()]);
+  await Promise.allSettled([consumer, scheduler.close(), alerts.close(), push.close()]);
   await Promise.allSettled([db.end(), redis.quit(), bullConnection.quit()]);
   process.exit(0);
 }

@@ -13,6 +13,7 @@
   "dependencies": {
     "@jfs/db": "workspace:*",
     "@jfs/protocols": "workspace:*",
+    "@jfs/reports": "workspace:*",
     "bullmq": "^6.7.3",
     "ioredis": "^6.0.0",
     "nodemailer": "^10.5.0",
