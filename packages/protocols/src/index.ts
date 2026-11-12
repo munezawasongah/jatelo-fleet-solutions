@@ -29,3 +29,10 @@ export {
   type Gt06Fix,
   type Gt06Terminal,
 } from './gt06/encoder.js';
+export { QueclinkDecoder, type QueclinkFrame } from './queclink/decoder.js';
+export {
+  encodeQueclinkHeartbeat,
+  encodeQueclinkReport,
+  type QueclinkFix,
+  type QueclinkReport,
+} from './queclink/encoder.js';

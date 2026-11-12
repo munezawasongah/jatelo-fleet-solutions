@@ -81,9 +81,10 @@ function readGps(r: Reader): Partial<TelemetryRecord> {
   };
 }
 
-function terminalInfo(
-  b: number,
-): Pick<StatusUpdate, 'armed' | 'ignition' | 'charging' | 'engineCut'> & {
+function terminalInfo(b: number): Pick<
+  StatusUpdate,
+  'armed' | 'ignition' | 'charging' | 'engineCut'
+> & {
   alarm?: DeviceEvent['type'];
 } {
   const alarm = TERMINAL_ALARMS[(b >> 3) & 0b111];
