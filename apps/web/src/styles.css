@@ -1,0 +1,62 @@
+@import 'tailwindcss';
+@import '@fontsource-variable/inter';
+@import 'leaflet/dist/leaflet.css';
+
+@theme {
+  --font-sans: 'Inter Variable', ui-sans-serif, system-ui, -apple-system, 'Segoe UI', sans-serif;
+  --color-brand-50: #eef7f3;
+  --color-brand-100: #d5ece2;
+  --color-brand-200: #a9d8c4;
+  --color-brand-300: #73bea0;
+  --color-brand-400: #3f9e7a;
+  --color-brand-500: #1f8460;
+  --color-brand-600: #0f6b4f;
+  --color-brand-700: #0c5640;
+  --color-brand-800: #0b4534;
+  --color-brand-900: #0b3d2e;
+  --color-brand-950: #062219;
+  --color-accent-400: #f7c55e;
+  --color-accent-500: #f5b83d;
+  --color-accent-600: #d99a1c;
+  --color-ink: #13201b;
+  --color-surface: #f4f6f5;
+}
+
+html,
+body,
+#root {
+  height: 100%;
+}
+body {
+  @apply bg-surface text-ink antialiased;
+  font-feature-settings: 'cv11', 'ss01';
+}
+.tabular {
+  font-variant-numeric: tabular-nums;
+}
+:focus-visible {
+  outline: 2px solid var(--color-brand-500);
+  outline-offset: 2px;
+}
+.leaflet-container {
+  font: inherit;
+  background: #e8ecea;
+}
+.leaflet-div-icon {
+  background: transparent;
+  border: 0;
+}
+.vehicle-marker {
+  transition: transform 0.6s linear;
+}
+.scroll-thin {
+  scrollbar-width: thin;
+}
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    transition-duration: 0.01ms !important;
+  }
+}
