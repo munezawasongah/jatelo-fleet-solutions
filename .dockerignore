@@ -1,0 +1,13 @@
+**/node_modules
+**/dist
+**/.turbo
+apps/driver
+.git
+.github
+.claude-sync
+docs
+**/*.log
+.env
+.env.*
+dump.rdb
+infra/osrm/data

@@ -1,0 +1,11 @@
+app.{$DOMAIN} {
+	encode gzip
+	reverse_proxy web:8080
+}
+api.{$DOMAIN} {
+	encode gzip
+	reverse_proxy api:4000
+}
+gps.{$DOMAIN} {
+	reverse_proxy ingest:5080
+}

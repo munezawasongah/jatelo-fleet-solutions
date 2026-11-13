@@ -1,0 +1,65 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    services:
+      postgres:
+        image: postgis/postgis:16-3.5
+        env:
+          POSTGRES_USER: jfs
+          POSTGRES_PASSWORD: jfs_local_dev
+          POSTGRES_DB: jatelo_fleet
+        ports: ['5433:5432']
+        options: >-
+          --health-cmd "pg_isready -U jfs -d jatelo_fleet" --health-interval 5s --health-retries 20
+    env:
+      DATABASE_URL: postgres://jfs:jfs_local_dev@localhost:5433/jatelo_fleet
+      APP_DATABASE_URL: postgres://jfs_api:jfs_api_ci@localhost:5433/jatelo_fleet
+      SYSTEM_DATABASE_URL: postgres://jfs_worker:jfs_worker_ci@localhost:5433/jatelo_fleet
+    steps:
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: pnpm
+      - run: pnpm install --frozen-lockfile
+      - name: Database extensions
+        run: |
+          for e in postgis pgcrypto citext pg_trgm btree_gist; do
+            PGPASSWORD=jfs_local_dev psql -h localhost -p 5433 -U jfs -d jatelo_fleet -c "CREATE EXTENSION IF NOT EXISTS $e"
+          done
+      - run: pnpm build
+      - run: pnpm typecheck
+      - name: Migrations apply cleanly
+        run: node packages/db/dist/cli/migrate.js up
+      - name: Seed (demo data)
+        run: pnpm db:seed
+      - name: Protocol decoder tests
+        run: pnpm --filter @jfs/protocols test
+
+  driver-app:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: apps/driver
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+          cache-dependency-path: apps/driver/package-lock.json
+      - run: npm ci
+      - run: npx tsc --noEmit
+      - run: npx expo export --platform android --output-dir /tmp/export

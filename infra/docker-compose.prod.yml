@@ -1,0 +1,104 @@
+# Self-hosted production stack (single VPS). Railway users: see docs/DEPLOYMENT.md instead.
+#   cp .env.production.example .env.production   # fill in secrets
+#   docker compose -f infra/docker-compose.prod.yml --env-file .env.production up -d --build
+name: jatelo-fleet-prod
+
+x-app: &app
+  restart: unless-stopped
+  env_file: ../.env.production
+  depends_on:
+    postgres: { condition: service_healthy }
+    redis: { condition: service_healthy }
+
+services:
+  postgres:
+    image: postgis/postgis:16-3.5
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: jfs
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?set POSTGRES_PASSWORD}
+      POSTGRES_DB: jatelo_fleet
+    command: ['postgres', '-c', 'shared_buffers=1GB', '-c', 'work_mem=16MB', '-c', 'max_connections=200', '-c', 'timezone=UTC']
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+      - ./postgres/init:/docker-entrypoint-initdb.d:ro
+    healthcheck:
+      test: ['CMD-SHELL', 'pg_isready -U jfs -d jatelo_fleet']
+      interval: 5s
+      retries: 30
+
+  redis:
+    image: redis:7-alpine
+    restart: unless-stopped
+    command: ['redis-server', '--appendonly', 'yes', '--maxmemory', '1gb', '--maxmemory-policy', 'noeviction']
+    volumes:
+      - redisdata:/data
+    healthcheck:
+      test: ['CMD', 'redis-cli', 'ping']
+      interval: 5s
+      retries: 30
+
+  migrate:
+    <<: *app
+    build: { context: .., dockerfile: apps/api/Dockerfile }
+    command: ['node', '/repo/packages/db/dist/cli/migrate.js', 'up']
+    restart: 'no'
+    environment:
+      DATABASE_URL: postgres://jfs:${POSTGRES_PASSWORD}@postgres:5432/jatelo_fleet
+
+  api:
+    <<: *app
+    build: { context: .., dockerfile: apps/api/Dockerfile }
+    depends_on:
+      migrate: { condition: service_completed_successfully }
+    expose: ['4000']
+
+  worker:
+    <<: *app
+    build: { context: .., dockerfile: apps/worker/Dockerfile }
+    depends_on:
+      migrate: { condition: service_completed_successfully }
+
+  ingest:
+    <<: *app
+    build: { context: .., dockerfile: apps/ingest/Dockerfile }
+    ports:
+      - '5027:5027' # Teltonika
+      - '5023:5023' # GT06 / Concox
+      - '5004:5004' # Queclink
+    expose: ['5080']
+
+  web:
+    build: { context: .., dockerfile: apps/web/Dockerfile }
+    restart: unless-stopped
+    environment:
+      API_UPSTREAM: http://api:4000
+    depends_on: [api]
+    expose: ['8080']
+
+  # TLS termination + routing: app.<domain> -> web, api.<domain> -> api, gps.<domain>/v1/positions -> ingest (phones)
+  caddy:
+    image: caddy:2-alpine
+    restart: unless-stopped
+    ports: ['80:80', '443:443']
+    environment:
+      DOMAIN: ${DOMAIN:?set DOMAIN, e.g. jatelofleet.com}
+    volumes:
+      - ./Caddyfile:/etc/caddy/Caddyfile:ro
+      - caddydata:/data
+    depends_on: [web, api, ingest]
+
+  # Optional road routing for route optimisation and ETAs (Kenya extract shown; see docs/DEPLOYMENT.md to prepare data)
+  osrm:
+    image: ghcr.io/project-osrm/osrm-backend:v5.27.1
+    profiles: ['routing']
+    restart: unless-stopped
+    command: osrm-routed --algorithm mld /data/region.osrm
+    volumes:
+      - ./osrm/data:/data
+    expose: ['5000']
+
+volumes:
+  pgdata:
+  redisdata:
+  caddydata:
