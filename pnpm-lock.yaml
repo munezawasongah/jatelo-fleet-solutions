@@ -476,6 +476,25 @@ importers:
         specifier: ^7.0.2
         version: 7.0.2
 
+  tools/simulator:
+    dependencies:
+      '@jfs/db':
+        specifier: workspace:*
+        version: link:../../packages/db
+      '@jfs/protocols':
+        specifier: workspace:*
+        version: link:../../packages/protocols
+    devDependencies:
+      '@types/node':
+        specifier: ^26.6.6
+        version: 26.6.6
+      tsx:
+        specifier: ^4.23.15
+        version: 4.23.15
+      typescript:
+        specifier: ^7.0.2
+        version: 7.0.2
+
 packages:
 
   '@apideck/better-ajv-errors@0.3.7':

@@ -1,0 +1,23 @@
+{
+  "name": "@jfs/simulator",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "description": "Multi-device GPS tracker simulator (Teltonika, GT06, Queclink, phone HTTP) for demos and load tests",
+  "bin": { "jfs-sim": "./dist/index.js" },
+  "scripts": {
+    "build": "tsc -p tsconfig.json",
+    "typecheck": "tsc -p tsconfig.json --noEmit",
+    "start": "node dist/index.js",
+    "dev": "tsx src/index.ts"
+  },
+  "dependencies": {
+    "@jfs/db": "workspace:*",
+    "@jfs/protocols": "workspace:*"
+  },
+  "devDependencies": {
+    "@types/node": "^26.6.6",
+    "tsx": "^4.23.15",
+    "typescript": "^7.0.2"
+  }
+}
