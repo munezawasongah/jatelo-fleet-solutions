@@ -78,7 +78,7 @@ function Conversation({ driverId, name, onBack }: { driverId: string; name: stri
     if (!text.trim() && !attachment) return;
     setBusy(true);
     try {
-      const fileId = attachment ? await api.upload(attachment, 'other') : undefined;
+      const fileId = attachment ? await api.upload(attachment, attachment.type.startsWith('image/') ? 'proof_of_delivery' : 'other') : undefined;
       await api.post(`/messages/threads/${driverId}`, { body: text.trim() || undefined, attachment_file_id: fileId, client_msg_id: crypto.randomUUID() });
       setText('');
       await q.refetch();

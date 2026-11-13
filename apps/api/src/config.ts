@@ -85,6 +85,7 @@ const schema = z.object({
     .transform((v) => (v ? v : undefined)),
   MPESA_TRANSACTION_TYPE: z.enum(['CustomerPayBillOnline', 'CustomerBuyGoodsOnline']).default('CustomerPayBillOnline'),
   INGEST_CONTROL_CHANNEL: z.string().default('ingest:cmd'),
+  INGEST_PUBLIC_URL: z.string().url().default('http://localhost:5080'),
 });
 
 const parsed = schema.safeParse(process.env);

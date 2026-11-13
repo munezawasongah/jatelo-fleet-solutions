@@ -21,6 +21,7 @@ import { registerAnalyticsRoutes } from './analytics.js';
 import { registerAdminRoutes } from './admin.js';
 import { registerBillingRoutes } from './billing.js';
 import { registerPlatformRoutes } from './platform.js';
+import { registerDriverAppRoutes } from './driver-app.js';
 
 const ApiInfo = z.object({ name: z.string(), version: z.string(), docs: z.string() });
 
@@ -53,4 +54,5 @@ export function registerV1Routes(v1: Router): void {
   registerAdminRoutes(v1);
   registerBillingRoutes(v1);
   registerPlatformRoutes(v1);
+  registerDriverAppRoutes(v1);
 }
